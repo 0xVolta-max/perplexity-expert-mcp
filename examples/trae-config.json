@@ -1,0 +1,42 @@
+{
+  "name": "Perplexity Expert Delegation",
+  "description": "Expert-LLM Delegation via Perplexity Pro API - Zugang zu Claude 4, Gemini 2.5 Pro, GPT-4 Omni und mehr",
+  "transport": "stdio",
+  "command": "perplexity-expert-mcp",
+  "env": {
+    "PERPLEXITY_API_KEY": "pplx-your-actual-api-key-here"
+  },
+  "capabilities": {
+    "tools": [
+      {
+        "name": "consult-expert",
+        "description": "Konsultiere spezifische Expert-LLMs für komplexe Aufgaben"
+      },
+      {
+        "name": "smart-expert-route",
+        "description": "Automatische Auswahl des optimalen Expert-Modells"
+      },
+      {
+        "name": "compare-experts",
+        "description": "Vergleiche Antworten von mehreren Expert-Modellen"
+      },
+      {
+        "name": "model-info",
+        "description": "Informationen über verfügbare Expert-Modelle"
+      }
+    ],
+    "models": [
+      "claude-4-sonnet",
+      "claude-4-sonnet-thinking",
+      "gemini-2.5-pro",
+      "sonar-reasoning-pro",
+      "gpt-4-omni",
+      "r1-1776"
+    ]
+  },
+  "settings": {
+    "timeout": 180000,
+    "retries": 3,
+    "debug": false
+  }
+}
