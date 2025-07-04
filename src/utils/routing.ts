@@ -7,6 +7,16 @@ export interface RoutingResult {
   confidence: number;
 }
 
+interface KeywordCounts {
+  coding: number;
+  complexity: number;
+  analysis: number;
+  research: number;
+  multimodal: number;
+  creative: number;
+  reasoning: number;
+}
+
 export class SmartRouter {
   /**
    * Analysiert eine Anfrage und wählt das optimale Expert-Modell aus
@@ -98,7 +108,7 @@ export class SmartRouter {
     };
   }
 
-  private static extractKeywords(query: string) {
+  private static extractKeywords(query: string): KeywordCounts {
     const keywordPatterns = {
       coding: [
         'code', 'programmier', 'software', 'debug', 'implementier', 'refactor',
@@ -131,10 +141,19 @@ export class SmartRouter {
       ]
     };
 
-    const counts: Record<string, number> = {};
-
+    // Initialisiere alle Counts mit 0
+    const counts: KeywordCounts = {
+      coding: 0,
+      complexity: 0,
+      analysis: 0,
+      research: 0,
+      multimodal: 0,
+      creative: 0,
+      reasoning: 0
+    };
+    
     for (const [category, patterns] of Object.entries(keywordPatterns)) {
-      counts[category] = patterns.reduce((count, pattern) => {
+      counts[category as keyof KeywordCounts] = patterns.reduce((count, pattern) => {
         const regex = new RegExp(pattern, 'gi');
         const matches = query.match(regex);
         return count + (matches ? matches.length : 0);
@@ -144,7 +163,7 @@ export class SmartRouter {
     return counts;
   }
 
-  private static generateReasoning(model: string, keywords: any, score: number): string {
+  private static generateReasoning(model: string, keywords: KeywordCounts, score: number): string {
     const modelConfig = EXPERT_MODELS[model];
     const strength = modelConfig?.strength || 'general';
 
