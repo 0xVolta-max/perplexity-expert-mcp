@@ -39,7 +39,7 @@ server.tool(
   async ({ query, expert_model, context, temperature, task_type = "analysis" }) => {
     try {
       const modelConfig = EXPERT_MODELS[expert_model];
-
+      
       if (!modelConfig) {
         throw new Error(`Unbekanntes Modell: ${expert_model}`);
       }
@@ -56,7 +56,7 @@ server.tool(
       // Erstelle den finalen Prompt
       let expertPrompt = query;
       if (context) {
-        expertPrompt = `**Kontext:**\\n${context}\\n\\n**Aufgabe:**\\n${query}`;
+        expertPrompt = `**Kontext:**\n${context}\n\n**Aufgabe:**\n${query}`;
       }
 
       const messages: PerplexityMessage[] = [
@@ -72,18 +72,18 @@ server.tool(
 
       // Rufe den Expert auf
       const result = await perplexityService.callExpert(
-        modelConfig,
-        messages,
+        modelConfig, 
+        messages, 
         temperature ?? modelConfig.defaultTemperature
       );
 
       // Erstelle Response mit Metadaten
-      const thinkingNote = modelConfig.reasoning ?
-        "\\n\\n🧠 **Extended Thinking aktiviert** - Dieses Modell hat tiefere Analyse-Schritte durchgeführt." : "";
+      const thinkingNote = modelConfig.reasoning ? 
+        "\n\n🧠 **Extended Thinking aktiviert** - Dieses Modell hat tiefere Analyse-Schritte durchgeführt." : "";
 
       const strengthEmoji = {
         coding: "💻",
-        analysis: "🔍",
+        analysis: "🔍", 
         multimodal: "🎨",
         research: "📚",
         general: "🌟",
@@ -94,7 +94,7 @@ server.tool(
         content: [
           {
             type: "text",
-            text: `# 🎯 Expert Consultation Ergebnis\\n\\n## ${strengthEmoji} ${expert_model}\\n\\n${result}${thinkingNote}\\n\\n---\\n\\n**📊 Modell-Details:**\\n- *${modelConfig.description}*\\n- *🔧 Task Type: ${task_type}*\\n- *🌡️ Temperature: ${temperature ?? modelConfig.defaultTemperature}*\\n- *⚡ Powered by Perplexity Pro*`
+            text: `# 🎯 Expert Consultation Ergebnis\n\n## ${strengthEmoji} ${expert_model}\n\n${result}${thinkingNote}\n\n---\n\n**📊 Modell-Details:**\n- *${modelConfig.description}*\n- *🔧 Task Type: ${task_type}*\n- *🌡️ Temperature: ${temperature ?? modelConfig.defaultTemperature}*\n- *⚡ Powered by Perplexity Pro*`
           }
         ]
       };
@@ -104,7 +104,7 @@ server.tool(
         content: [
           {
             type: "text",
-            text: `# ❌ Expert Consultation Fehlgeschlagen\\n\\n**Modell:** ${expert_model}\\n**Fehler:** ${error.message}\\n\\n## 💡 Mögliche Lösungen:\\n- Überprüfen Sie Ihren PERPLEXITY_API_KEY\\n- Stellen Sie sicher, dass Ihr Pro-Abo aktiv ist\\n- Das gewählte Modell könnte temporär nicht verfügbar sein\\n- Bei Timeout: Versuchen Sie eine kürzere/einfachere Anfrage`
+            text: `# ❌ Expert Consultation Fehlgeschlagen\n\n**Modell:** ${expert_model}\n**Fehler:** ${error.message}\n\n## 💡 Mögliche Lösungen:\n- Überprüfen Sie Ihren PERPLEXITY_API_KEY\n- Stellen Sie sicher, dass Ihr Pro-Abo aktiv ist\n- Das gewählte Modell könnte temporär nicht verfügbar sein\n- Bei Timeout: Versuchen Sie eine kürzere/einfachere Anfrage`
           }
         ],
         isError: true
@@ -131,6 +131,11 @@ server.tool(
       const routing = SmartRouter.analyzeAndRoute(query, force_thinking);
       const modelConfig = EXPERT_MODELS[routing.selectedModel];
 
+      // Sicherheitsprüfung für modelConfig
+      if (!modelConfig) {
+        throw new Error(`Modell-Konfiguration für ${routing.selectedModel} nicht gefunden`);
+      }
+
       // Task-spezifische System-Prompts (gleiche wie oben)
       const systemPrompts: Record<TaskType, string> = {
         analysis: "Du bist ein Experte für umfassende Analysen und präzise Bewertungen.",
@@ -143,7 +148,7 @@ server.tool(
       // Erstelle den Prompt
       let expertPrompt = query;
       if (context) {
-        expertPrompt = `**Kontext:**\\n${context}\\n\\n**Aufgabe:**\\n${query}`;
+        expertPrompt = `**Kontext:**\n${context}\n\n**Aufgabe:**\n${query}`;
       }
 
       const messages: PerplexityMessage[] = [
@@ -160,15 +165,15 @@ server.tool(
       // Rufe den Expert auf
       const result = await perplexityService.callExpert(modelConfig, messages);
 
-      const thinkingNote = modelConfig.reasoning ?
-        "\\n\\n🧠 **Extended Thinking aktiviert**" : "";
+      const thinkingNote = modelConfig.reasoning ? 
+        "\n\n🧠 **Extended Thinking aktiviert**" : "";
 
-      const confidenceBar = "█".repeat(Math.floor(routing.confidence * 10)) +
+      const confidenceBar = "█".repeat(Math.floor(routing.confidence * 10)) + 
                            "░".repeat(10 - Math.floor(routing.confidence * 10));
 
       const strengthEmoji = {
         coding: "💻",
-        analysis: "🔍",
+        analysis: "🔍", 
         multimodal: "🎨",
         research: "📚",
         general: "🌟",
@@ -179,7 +184,7 @@ server.tool(
         content: [
           {
             type: "text",
-            text: `# 🤖 Smart Expert Routing Ergebnis\\n\\n## 🎯 Routing-Analyse\\n- **Gewähltes Modell:** ${strengthEmoji} ${routing.selectedModel}\\n- **Begründung:** ${routing.reasoning}\\n- **Task-Typ:** ${routing.taskType}\\n- **Confidence:** ${confidenceBar} ${(routing.confidence * 100).toFixed(0)}%\\n\\n## 🎭 Expert Response\\n\\n${result}${thinkingNote}\\n\\n---\\n\\n**📊 Modell-Details:**\\n- *${modelConfig.description}*\\n- *⚡ Powered by Perplexity Pro*`
+            text: `# 🤖 Smart Expert Routing Ergebnis\n\n## 🎯 Routing-Analyse\n- **Gewähltes Modell:** ${strengthEmoji} ${routing.selectedModel}\n- **Begründung:** ${routing.reasoning}\n- **Task-Typ:** ${routing.taskType}\n- **Confidence:** ${confidenceBar} ${(routing.confidence * 100).toFixed(0)}%\n\n## 🎭 Expert Response\n\n${result}${thinkingNote}\n\n---\n\n**📊 Modell-Details:**\n- *${modelConfig.description}*\n- *⚡ Powered by Perplexity Pro*`
           }
         ]
       };
@@ -189,7 +194,7 @@ server.tool(
         content: [
           {
             type: "text",
-            text: `# ❌ Smart Routing Fehlgeschlagen\\n\\n**Fehler:** ${error.message}\\n\\nBitte überprüfen Sie Ihre Konfiguration und versuchen Sie es erneut.`
+            text: `# ❌ Smart Routing Fehlgeschlagen\n\n**Fehler:** ${error.message}\n\nBitte überprüfen Sie Ihre Konfiguration und versuchen Sie es erneut.`
           }
         ],
         isError: true
@@ -224,9 +229,14 @@ server.tool(
         uniqueModels.map(async (modelName) => {
           const modelConfig = EXPERT_MODELS[modelName];
 
+          // Sicherheitsprüfung für modelConfig
+          if (!modelConfig) {
+            throw new Error(`Modell-Konfiguration für ${modelName} nicht gefunden`);
+          }
+
           let expertPrompt = query;
           if (context) {
-            expertPrompt = `**Kontext:**\\n${context}\\n\\n**Aufgabe:**\\n${query}`;
+            expertPrompt = `**Kontext:**\n${context}\n\n**Aufgabe:**\n${query}`;
           }
 
           const messages: PerplexityMessage[] = [
@@ -241,11 +251,11 @@ server.tool(
           ];
 
           const result = await perplexityService.callExpert(
-            modelConfig,
-            messages,
+            modelConfig, 
+            messages, 
             temperature ?? modelConfig.defaultTemperature
           );
-
+          
           return {
             model: modelName,
             result,
@@ -255,34 +265,34 @@ server.tool(
       );
 
       // Erstelle den Vergleichstext
-      let comparisonText = "# 🏆 Expert Model Vergleich\\n\\n";
-
+      let comparisonText = "# 🏆 Expert Model Vergleich\n\n";
+      
       results.forEach((result, index) => {
         if (result.status === "fulfilled") {
           const { model, result: response, config } = result.value;
           const thinkingIcon = config.reasoning ? "🧠" : "⚡";
           const strengthIcon = {
             coding: "💻",
-            analysis: "🔍",
+            analysis: "🔍", 
             multimodal: "🎨",
             research: "📚",
             general: "🌟",
             creative: "✨"
           }[config.strength] || "🤖";
-
-          comparisonText += `## ${thinkingIcon} ${strengthIcon} ${model}\\n`;
-          comparisonText += `*${config.description}*\\n\\n`;
-          comparisonText += `${response}\\n\\n`;
-
+          
+          comparisonText += `## ${thinkingIcon} ${strengthIcon} ${model}\n`;
+          comparisonText += `*${config.description}*\n\n`;
+          comparisonText += `${response}\n\n`;
+          
           if (config.reasoning) {
-            comparisonText += "*🧠 Extended Thinking wurde verwendet*\\n\\n";
+            comparisonText += "*🧠 Extended Thinking wurde verwendet*\n\n";
           }
-
-          comparisonText += `---\\n\\n`;
+          
+          comparisonText += `---\n\n`;
         } else {
           const modelName = uniqueModels[index];
-          comparisonText += `## ❌ ${modelName} (Fehlgeschlagen)\\n`;
-          comparisonText += `*Fehler: ${result.reason.message}*\\n\\n---\\n\\n`;
+          comparisonText += `## ❌ ${modelName} (Fehlgeschlagen)\n`;
+          comparisonText += `*Fehler: ${result.reason.message}*\n\n---\n\n`;
         }
       });
 
@@ -303,7 +313,7 @@ server.tool(
         content: [
           {
             type: "text",
-            text: `# ❌ Model Vergleich Fehlgeschlagen\\n\\n**Fehler:** ${error.message}`
+            text: `# ❌ Model Vergleich Fehlgeschlagen\n\n**Fehler:** ${error.message}`
           }
         ],
         isError: true
@@ -322,12 +332,12 @@ server.tool(
   {},
   async () => {
     try {
-      let infoText = "# 📊 Verfügbare Expert-Modelle\\n\\n";
+      let infoText = "# 📊 Verfügbare Expert-Modelle\n\n";
 
       for (const [modelName, config] of Object.entries(EXPERT_MODELS)) {
         const strengthIcon = {
           coding: "💻",
-          analysis: "🔍",
+          analysis: "🔍", 
           multimodal: "🎨",
           research: "📚",
           general: "🌟",
@@ -336,20 +346,20 @@ server.tool(
 
         const reasoningIcon = config.reasoning ? "🧠" : "⚡";
 
-        infoText += `## ${reasoningIcon} ${strengthIcon} ${modelName}\\n`;
-        infoText += `- **Beschreibung:** ${config.description}\\n`;
-        infoText += `- **Stärke:** ${config.strength}\\n`;
-        infoText += `- **Reasoning:** ${config.reasoning ? "Ja (Extended Thinking)" : "Nein"}\\n`;
-        infoText += `- **Max Tokens:** ${config.maxTokens}\\n`;
-        infoText += `- **Default Temperature:** ${config.defaultTemperature}\\n\\n`;
+        infoText += `## ${reasoningIcon} ${strengthIcon} ${modelName}\n`;
+        infoText += `- **Beschreibung:** ${config.description}\n`;
+        infoText += `- **Stärke:** ${config.strength}\n`;
+        infoText += `- **Reasoning:** ${config.reasoning ? "Ja (Extended Thinking)" : "Nein"}\n`;
+        infoText += `- **Max Tokens:** ${config.maxTokens}\n`;
+        infoText += `- **Default Temperature:** ${config.defaultTemperature}\n\n`;
       }
 
-      infoText += "\\n## 🎯 Task Types\\n\\n";
+      infoText += "\n## 🎯 Task Types\n\n";
       for (const [taskType, description] of Object.entries(TASK_TYPES)) {
-        infoText += `- **${taskType}:** ${description}\\n`;
+        infoText += `- **${taskType}:** ${description}\n`;
       }
 
-      infoText += "\\n*⚡ Alle Modelle werden über Perplexity Pro API bereitgestellt*";
+      infoText += "\n*⚡ Alle Modelle werden über Perplexity Pro API bereitgestellt*";
 
       return {
         content: [
@@ -385,11 +395,11 @@ async function main() {
 
     const transport = new StdioServerTransport();
     await server.connect(transport);
-
+    
     console.error("🚀 Perplexity Pro Expert Delegation MCP Server läuft");
     console.error("🎯 Verfügbare Modelle:", Object.keys(EXPERT_MODELS).join(", "));
     console.error("⚡ Powered by Perplexity Pro API");
-
+    
   } catch (error) {
     console.error("❌ Fehler beim Starten des Servers:", error);
     process.exit(1);
