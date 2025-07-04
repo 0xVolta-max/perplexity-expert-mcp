@@ -9,7 +9,7 @@
     "dev": "tsx src/index.ts",
     "clean": "rm -rf dist",
     "prepack": "npm run build",
-    "test": "echo "No tests specified" && exit 0",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "bin": {
     "perplexity-expert-mcp": "dist/index.js"
@@ -27,7 +27,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "<https://github.com/0xVolta-max/perplexity-expert-mcp.git>"
+    "url": "https://github.com/0xVolta-max/perplexity-expert-mcp.git"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
