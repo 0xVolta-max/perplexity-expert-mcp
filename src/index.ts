@@ -8,10 +8,8 @@ import { EXPERT_MODELS, TASK_TYPES, TaskType } from './config/models.js';
 import { PerplexityService, PerplexityMessage } from './services/perplexity.js';
 import { SmartRouter } from './utils/routing.js';
 
-// Lade Umgebungsvariablen
 dotenv.config();
 
-// Initialisiere Services
 const perplexityService = new PerplexityService(process.env.PERPLEXITY_API_KEY || '');
 
 const server = new McpServer({
@@ -19,13 +17,9 @@ const server = new McpServer({
   version: "1.0.0"
 });
 
-// Definiere verfügbare Modelle für Zod-Validierung
 const availableModels = Object.keys(EXPERT_MODELS) as [string, ...string[]];
 
-/**
- * Tool 1: Expert Consultation
- * Direkte Auswahl eines spezifischen Expert-Modells
- */
+// Tool 1: Expert Consultation
 server.tool(
   "consult-expert",
   "Konsultiere ein spezifisches Expert-LLM über Perplexity Pro für komplexe Aufgaben",
@@ -39,12 +33,10 @@ server.tool(
   async ({ query, expert_model, context, temperature, task_type = "analysis" }) => {
     try {
       const modelConfig = EXPERT_MODELS[expert_model];
-      
       if (!modelConfig) {
         throw new Error(`Unbekanntes Modell: ${expert_model}`);
       }
 
-      // Task-spezifische System-Prompts
       const systemPrompts: Record<TaskType, string> = {
         analysis: "Du bist ein Experte für tiefgreifende Analysen. Liefere umfassende, datengestützte Erkenntnisse und strukturierte Bewertungen mit klaren Schlussfolgerungen.",
         coding: "Du bist ein Senior Software-Architekt und Coding-Experte. Liefere saubere, effiziente und gut dokumentierte Lösungen mit Best Practices. Erkläre deine Designentscheidungen.",
@@ -53,37 +45,32 @@ server.tool(
         "problem-solving": "Du bist ein strategischer Problemlöser, der komplexe Herausforderungen systematisch in umsetzbare Lösungen aufteilt. Berücksichtige verschiedene Perspektiven."
       };
 
-      // Erstelle den finalen Prompt
       let expertPrompt = query;
       if (context) {
         expertPrompt = `**Kontext:**\n${context}\n\n**Aufgabe:**\n${query}`;
       }
 
       const messages: PerplexityMessage[] = [
-        {
-          role: "system",
-          content: systemPrompts[task_type]
-        },
-        {
-          role: "user",
-          content: expertPrompt
-        }
+        { role: "system", content: systemPrompts[task_type] },
+        { role: "user", content: expertPrompt }
       ];
 
-      // Rufe den Expert auf
       const result = await perplexityService.callExpert(
-        modelConfig, 
-        messages, 
+        modelConfig,
+        messages,
         temperature ?? modelConfig.defaultTemperature
       );
+      if (!result) {
+        throw new Error("Unerwartete API-Antwort: Kein Content erhalten");
+      }
 
-      // Erstelle Response mit Metadaten
-      const thinkingNote = modelConfig.reasoning ? 
-        "\n\n🧠 **Extended Thinking aktiviert** - Dieses Modell hat tiefere Analyse-Schritte durchgeführt." : "";
+      const thinkingNote = modelConfig.reasoning
+        ? "\n\n🧠 **Extended Thinking aktiviert** - Dieses Modell hat tiefere Analyse-Schritte durchgeführt."
+        : "";
 
       const strengthEmoji = {
         coding: "💻",
-        analysis: "🔍", 
+        analysis: "🔍",
         multimodal: "🎨",
         research: "📚",
         general: "🌟",
@@ -113,10 +100,7 @@ server.tool(
   }
 );
 
-/**
- * Tool 2: Smart Expert Router
- * Automatische Auswahl des optimalen Expert-Modells
- */
+// Tool 2: Smart Expert Router
 server.tool(
   "smart-expert-route",
   "Automatische Auswahl und Konsultation des besten Expert-Modells basierend auf Anfrage-Analyse",
@@ -127,16 +111,12 @@ server.tool(
   },
   async ({ query, context, force_thinking = false }) => {
     try {
-      // Analysiere und route die Anfrage
       const routing = SmartRouter.analyzeAndRoute(query, force_thinking);
       const modelConfig = EXPERT_MODELS[routing.selectedModel];
-
-      // Sicherheitsprüfung für modelConfig
       if (!modelConfig) {
         throw new Error(`Modell-Konfiguration für ${routing.selectedModel} nicht gefunden`);
       }
 
-      // Task-spezifische System-Prompts (gleiche wie oben)
       const systemPrompts: Record<TaskType, string> = {
         analysis: "Du bist ein Experte für umfassende Analysen und präzise Bewertungen.",
         coding: "Du bist ein Senior Software-Experte für saubere, effiziente Lösungen.",
@@ -145,35 +125,31 @@ server.tool(
         creative: "Du bist ein kreativer Experte für innovative Inhalte."
       };
 
-      // Erstelle den Prompt
       let expertPrompt = query;
       if (context) {
         expertPrompt = `**Kontext:**\n${context}\n\n**Aufgabe:**\n${query}`;
       }
 
       const messages: PerplexityMessage[] = [
-        {
-          role: "system",
-          content: systemPrompts[routing.taskType]
-        },
-        {
-          role: "user",
-          content: expertPrompt
-        }
+        { role: "system", content: systemPrompts[routing.taskType] },
+        { role: "user", content: expertPrompt }
       ];
 
-      // Rufe den Expert auf
       const result = await perplexityService.callExpert(modelConfig, messages);
+      if (!result) {
+        throw new Error("Unerwartete API-Antwort: Kein Content erhalten");
+      }
 
-      const thinkingNote = modelConfig.reasoning ? 
-        "\n\n🧠 **Extended Thinking aktiviert**" : "";
+      const thinkingNote = modelConfig.reasoning
+        ? "\n\n🧠 **Extended Thinking aktiviert**"
+        : "";
 
-      const confidenceBar = "█".repeat(Math.floor(routing.confidence * 10)) + 
-                           "░".repeat(10 - Math.floor(routing.confidence * 10));
+      const confidenceBar = "█".repeat(Math.floor(routing.confidence * 10)) +
+        "░".repeat(10 - Math.floor(routing.confidence * 10));
 
       const strengthEmoji = {
         coding: "💻",
-        analysis: "🔍", 
+        analysis: "🔍",
         multimodal: "🎨",
         research: "📚",
         general: "🌟",
@@ -203,10 +179,7 @@ server.tool(
   }
 );
 
-/**
- * Tool 3: Multi-Expert Comparison
- * Parallele Konsultation mehrerer Expert-Modelle
- */
+// Tool 3: Multi-Expert Comparison
 server.tool(
   "compare-experts",
   "Vergleiche Antworten von mehreren Expert-Modellen parallel über Perplexity Pro",
@@ -222,14 +195,10 @@ server.tool(
   },
   async ({ query, models, context, temperature }) => {
     try {
-      const uniqueModels = [...new Set(models)]; // Entferne Duplikate
-
-      // Führe alle Anfragen parallel aus
+      const uniqueModels = [...new Set(models)];
       const results = await Promise.allSettled(
         uniqueModels.map(async (modelName) => {
           const modelConfig = EXPERT_MODELS[modelName];
-
-          // Sicherheitsprüfung für modelConfig
           if (!modelConfig) {
             throw new Error(`Modell-Konfiguration für ${modelName} nicht gefunden`);
           }
@@ -251,11 +220,13 @@ server.tool(
           ];
 
           const result = await perplexityService.callExpert(
-            modelConfig, 
-            messages, 
+            modelConfig,
+            messages,
             temperature ?? modelConfig.defaultTemperature
           );
-          
+          if (!result) {
+            throw new Error("Unerwartete API-Antwort: Kein Content erhalten");
+          }
           return {
             model: modelName,
             result,
@@ -264,35 +235,30 @@ server.tool(
         })
       );
 
-      // Erstelle den Vergleichstext
       let comparisonText = "# 🏆 Expert Model Vergleich\n\n";
-      
       results.forEach((result, index) => {
         if (result.status === "fulfilled") {
           const { model, result: response, config } = result.value;
           const thinkingIcon = config.reasoning ? "🧠" : "⚡";
           const strengthIcon = {
             coding: "💻",
-            analysis: "🔍", 
+            analysis: "🔍",
             multimodal: "🎨",
             research: "📚",
             general: "🌟",
             creative: "✨"
           }[config.strength] || "🤖";
-          
           comparisonText += `## ${thinkingIcon} ${strengthIcon} ${model}\n`;
           comparisonText += `*${config.description}*\n\n`;
           comparisonText += `${response}\n\n`;
-          
           if (config.reasoning) {
             comparisonText += "*🧠 Extended Thinking wurde verwendet*\n\n";
           }
-          
           comparisonText += `---\n\n`;
         } else {
           const modelName = uniqueModels[index];
           comparisonText += `## ❌ ${modelName} (Fehlgeschlagen)\n`;
-          comparisonText += `*Fehler: ${result.reason.message}*\n\n---\n\n`;
+          comparisonText += `*Fehler: ${result.reason instanceof Error ? result.reason.message : result.reason}*\n\n---\n\n`;
         }
       });
 
@@ -322,10 +288,7 @@ server.tool(
   }
 );
 
-/**
- * Tool 4: Model Info
- * Informationen über verfügbare Modelle
- */
+// Tool 4: Model Info
 server.tool(
   "model-info",
   "Zeige Informationen über verfügbare Expert-Modelle",
@@ -333,19 +296,16 @@ server.tool(
   async () => {
     try {
       let infoText = "# 📊 Verfügbare Expert-Modelle\n\n";
-
       for (const [modelName, config] of Object.entries(EXPERT_MODELS)) {
         const strengthIcon = {
           coding: "💻",
-          analysis: "🔍", 
+          analysis: "🔍",
           multimodal: "🎨",
           research: "📚",
           general: "🌟",
           creative: "✨"
         }[config.strength] || "🤖";
-
         const reasoningIcon = config.reasoning ? "🧠" : "⚡";
-
         infoText += `## ${reasoningIcon} ${strengthIcon} ${modelName}\n`;
         infoText += `- **Beschreibung:** ${config.description}\n`;
         infoText += `- **Stärke:** ${config.strength}\n`;
@@ -353,14 +313,11 @@ server.tool(
         infoText += `- **Max Tokens:** ${config.maxTokens}\n`;
         infoText += `- **Default Temperature:** ${config.defaultTemperature}\n\n`;
       }
-
       infoText += "\n## 🎯 Task Types\n\n";
       for (const [taskType, description] of Object.entries(TASK_TYPES)) {
         infoText += `- **${taskType}:** ${description}\n`;
       }
-
       infoText += "\n*⚡ Alle Modelle werden über Perplexity Pro API bereitgestellt*";
-
       return {
         content: [
           {
@@ -369,7 +326,6 @@ server.tool(
           }
         ]
       };
-
     } catch (error: any) {
       return {
         content: [
@@ -384,22 +340,17 @@ server.tool(
   }
 );
 
-// Server starten
 async function main() {
   try {
-    // Teste die Verbindung zu Perplexity
     const connectionOk = await perplexityService.testConnection();
     if (!connectionOk) {
       console.error("⚠️  Warnung: Verbindung zu Perplexity API konnte nicht getestet werden");
     }
-
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    
     console.error("🚀 Perplexity Pro Expert Delegation MCP Server läuft");
     console.error("🎯 Verfügbare Modelle:", Object.keys(EXPERT_MODELS).join(", "));
     console.error("⚡ Powered by Perplexity Pro API");
-    
   } catch (error) {
     console.error("❌ Fehler beim Starten des Servers:", error);
     process.exit(1);
