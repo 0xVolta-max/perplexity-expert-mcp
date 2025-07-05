@@ -21,7 +21,7 @@ export interface PerplexityResponse {
 
 export class PerplexityService {
   private readonly apiKey: string;
-  private readonly baseUrl = "<https://api.perplexity.ai/chat/completions>";
+  private readonly baseUrl = "https://api.perplexity.ai/chat/completions";
 
   constructor(apiKey: string) {
     if (!apiKey) {
@@ -89,7 +89,7 @@ export class PerplexityService {
     try {
       await this.callExpert(
         {
-          model: "gpt-4-omni",
+          model: "claude-4-sonnet",
           description: "Test",
           reasoning: false,
           strength: "general",
